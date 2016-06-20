@@ -1,40 +1,16 @@
-var webpack = require('webpack');
-var OpenBrowserPlugin = require('open-browser-webpack-plugin');
-var uglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
-
 module.exports = {
-  entry: [
-  	'webpack/hot/dev-server',
-  	'webpack-dev-server/client?http://localhost:8080',
-  	'./js/index.jsx'
-  ],
+  entry: [ './src/index.js' ],
   output: {
-    filename: 'bundle.js'
+    filename: '[name].bundle.js',
+    chunkFilename: '[id].bundle.js', // 还不知道这个配置是做什么用的
+    path: 'dist'
   },
-  plugins: [
-  	new webpack.HotModuleReplacementPlugin(),
-  	new webpack.ProvidePlugin({
-      $: 'jquery',
-      jQuery: 'jquery',
-      'window.jQuery': 'jQuery'
-    }),
-    new OpenBrowserPlugin({
-      	url: 'http://localhost:8080'
-    })
-  ],
   module: {
   	loaders: [
-  		{
-  			test: /\.css$/, 
-  			loader: 'style-loader!css-loader?modules'
-  		},
   		{ 
-  			test: /\.js[x]?$/, 
+  			test: /\.js$/, 
   			exclude: /node_modules/, 
-  			loader: 'babel',
-  			query: {
-  				presets: ['es2015', 'react']
-  			}
+  			loader: 'babel-loader'
   		}
   	]
   }
