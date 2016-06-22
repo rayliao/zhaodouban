@@ -26129,12 +26129,19 @@
 	                            return _react2.default.createElement(
 	                                'li',
 	                                { key: item.id },
+	                                _react2.default.createElement('img', { src: item.images.medium }),
 	                                _react2.default.createElement(
 	                                    _reactRouter.Link,
 	                                    { to: {
 	                                            pathname: '/item/' + item.id
 	                                        } },
 	                                    item.title
+	                                ),
+	                                _react2.default.createElement(
+	                                    'p',
+	                                    null,
+	                                    '评分：',
+	                                    item.rating.average
 	                                )
 	                            );
 	                        })

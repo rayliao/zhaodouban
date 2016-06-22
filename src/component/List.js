@@ -15,9 +15,11 @@ export default class List extends Component {
                     {
                         list.map((item) => {
                             return <li key={item.id}>
+                                <img src={item.images.medium} />
                                 <Link to={{
                                     pathname: `/item/${item.id}`
                                 }}>{item.title}</Link>
+                                <p>评分：{item.rating.average}</p>
                             </li>
                         })
                     }
