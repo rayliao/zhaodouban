@@ -1,19 +1,39 @@
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
 import {Router, Route, Link, hashHistory} from 'react-router';
+import fetchJsonp from 'fetch-jsonp';
 
-import Search from './component/List';
-import List from './component/Search';
+import List from './component/List';
+import Search from './component/Search';
 import Item from './component/Item';
 
 class App extends Component {
+    constructor(props){
+        super(props);
+        this.state = {
+            list: []
+        }
+        this.fetchList = this.fetchList.bind(this);
+    }
+     // 获取api数据
+    fetchList(q) {
+        let url = `https://api.douban.com//v2/movie/search?q=${q}`;
+        fetchJsonp(url).then(res => res.json()).then(res => {
+            const list = res.subjects;
+            this.setState({
+                list
+            })
+        });
+    }
+    
+    componentDidMount() {
+        this.fetchList('姜文');
+    }
+    
     render() {
         return <div>
-        {
-            // 为什么list和search的组件顺序要反过来放
-        }
-        <Search />
-        <List />
+            <Search onSearch={this.fetchList} />
+            <List list={this.state.list} />
         </div>
     }
 }
