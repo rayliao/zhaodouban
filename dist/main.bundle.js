@@ -65,15 +65,19 @@
 
 	var _reactRouter = __webpack_require__(169);
 
-	var _List = __webpack_require__(230);
+	var _fetchJsonp = __webpack_require__(230);
+
+	var _fetchJsonp2 = _interopRequireDefault(_fetchJsonp);
+
+	var _List = __webpack_require__(231);
 
 	var _List2 = _interopRequireDefault(_List);
 
-	var _Search = __webpack_require__(231);
+	var _Search = __webpack_require__(232);
 
 	var _Search2 = _interopRequireDefault(_Search);
 
-	var _Item = __webpack_require__(232);
+	var _Item = __webpack_require__(233);
 
 	var _Item2 = _interopRequireDefault(_Item);
 
@@ -88,20 +92,48 @@
 	var App = function (_Component) {
 	    _inherits(App, _Component);
 
-	    function App() {
+	    function App(props) {
 	        _classCallCheck(this, App);
 
-	        return _possibleConstructorReturn(this, Object.getPrototypeOf(App).apply(this, arguments));
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(App).call(this, props));
+
+	        _this.state = {
+	            list: []
+	        };
+	        _this.fetchList = _this.fetchList.bind(_this);
+	        return _this;
 	    }
+	    // 获取api数据
+
 
 	    _createClass(App, [{
+	        key: 'fetchList',
+	        value: function fetchList(q) {
+	            var _this2 = this;
+
+	            var url = 'https://api.douban.com//v2/movie/search?q=' + q;
+	            (0, _fetchJsonp2.default)(url).then(function (res) {
+	                return res.json();
+	            }).then(function (res) {
+	                var list = res.subjects;
+	                _this2.setState({
+	                    list: list
+	                });
+	            });
+	        }
+	    }, {
+	        key: 'componentDidMount',
+	        value: function componentDidMount() {
+	            this.fetchList('姜文');
+	        }
+	    }, {
 	        key: 'render',
 	        value: function render() {
 	            return _react2.default.createElement(
 	                'div',
 	                null,
-	                _react2.default.createElement(_List2.default, null),
-	                _react2.default.createElement(_Search2.default, null)
+	                _react2.default.createElement(_Search2.default, { onSearch: this.fetchList }),
+	                _react2.default.createElement(_List2.default, { list: this.state.list })
 	            );
 	        }
 	    }]);
@@ -25934,6 +25966,116 @@
 /* 230 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+	  if (true) {
+	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, module], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	  } else if (typeof exports !== 'undefined' && typeof module !== 'undefined') {
+	    factory(exports, module);
+	  } else {
+	    var mod = {
+	      exports: {}
+	    };
+	    factory(mod.exports, mod);
+	    global.fetchJsonp = mod.exports;
+	  }
+	})(this, function (exports, module) {
+	  'use strict';
+
+	  var defaultOptions = {
+	    timeout: 5000,
+	    jsonpCallback: 'callback',
+	    jsonpCallbackFunction: null
+	  };
+
+	  function generateCallbackFunction() {
+	    return 'jsonp_' + Date.now() + '_' + Math.ceil(Math.random() * 100000);
+	  }
+
+	  // Known issue: Will throw 'Uncaught ReferenceError: callback_*** is not defined' error if request timeout
+	  function clearFunction(functionName) {
+	    // IE8 throws an exception when you try to delete a property on window
+	    // http://stackoverflow.com/a/1824228/751089
+	    try {
+	      delete window[functionName];
+	    } catch (e) {
+	      window[functionName] = undefined;
+	    }
+	  }
+
+	  function removeScript(scriptId) {
+	    var script = document.getElementById(scriptId);
+	    document.getElementsByTagName('head')[0].removeChild(script);
+	  }
+
+	  var fetchJsonp = function fetchJsonp(url) {
+	    var options = arguments[1] === undefined ? {} : arguments[1];
+
+	    var timeout = options.timeout != null ? options.timeout : defaultOptions.timeout;
+	    var jsonpCallback = options.jsonpCallback != null ? options.jsonpCallback : defaultOptions.jsonpCallback;
+
+	    var timeoutId = undefined;
+
+	    return new Promise(function (resolve, reject) {
+	      var callbackFunction = options.jsonpCallbackFunction || generateCallbackFunction();
+
+	      window[callbackFunction] = function (response) {
+	        resolve({
+	          ok: true,
+	          // keep consistent with fetch API
+	          json: function json() {
+	            return Promise.resolve(response);
+	          }
+	        });
+
+	        if (timeoutId) clearTimeout(timeoutId);
+
+	        removeScript(jsonpCallback + '_' + callbackFunction);
+
+	        clearFunction(callbackFunction);
+	      };
+
+	      // Check if the user set their own params, and if not add a ? to start a list of params
+	      url += url.indexOf('?') === -1 ? '?' : '&';
+
+	      var jsonpScript = document.createElement('script');
+	      jsonpScript.setAttribute('src', url + jsonpCallback + '=' + callbackFunction);
+	      jsonpScript.id = jsonpCallback + '_' + callbackFunction;
+	      document.getElementsByTagName('head')[0].appendChild(jsonpScript);
+
+	      timeoutId = setTimeout(function () {
+	        reject(new Error('JSONP request to ' + url + ' timed out'));
+
+	        clearFunction(callbackFunction);
+	        removeScript(jsonpCallback + '_' + callbackFunction);
+	      }, timeout);
+	    });
+	  };
+
+	  // export as global function
+	  /*
+	  let local;
+	  if (typeof global !== 'undefined') {
+	    local = global;
+	  } else if (typeof self !== 'undefined') {
+	    local = self;
+	  } else {
+	    try {
+	      local = Function('return this')();
+	    } catch (e) {
+	      throw new Error('polyfill failed because global object is unavailable in this environment');
+	    }
+	  }
+	  
+	  local.fetchJsonp = fetchJsonp;
+	  */
+
+	  module.exports = fetchJsonp;
+	});
+
+/***/ },
+/* 231 */
+/***/ function(module, exports, __webpack_require__) {
+
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
@@ -25966,44 +26108,39 @@
 	    }
 
 	    _createClass(List, [{
-	        key: 'fetchList',
-
-	        // 获取api数据
-	        value: function fetchList(q) {
-	            var url = 'https://api.douban.com/v2/movie/search?q=' + q;
-	            fetch(url).then(function (res) {
-	                return res.json();
-	            }).then(function (res) {
-	                console.log(res);
-	            });
-	        }
-	    }, {
-	        key: 'componentDidMount',
-	        value: function componentDidMount() {
-	            this.fetchList('姜文');
-	        }
-	    }, {
 	        key: 'render',
 	        value: function render() {
-	            return _react2.default.createElement(
-	                'div',
-	                { className: 'list' },
-	                _react2.default.createElement(
-	                    'ul',
+	            var list = this.props.list;
+
+	            if (!list.length) {
+	                return _react2.default.createElement(
+	                    'div',
 	                    null,
+	                    '没找到有电影哦~'
+	                );
+	            } else {
+	                return _react2.default.createElement(
+	                    'div',
+	                    { className: 'list' },
 	                    _react2.default.createElement(
-	                        'li',
+	                        'ul',
 	                        null,
-	                        _react2.default.createElement(
-	                            _reactRouter.Link,
-	                            { to: {
-	                                    pathname: '/item/88'
-	                                } },
-	                            '跳到详细页'
-	                        )
+	                        list.map(function (item) {
+	                            return _react2.default.createElement(
+	                                'li',
+	                                { key: item.id },
+	                                _react2.default.createElement(
+	                                    _reactRouter.Link,
+	                                    { to: {
+	                                            pathname: '/item/' + item.id
+	                                        } },
+	                                    item.title
+	                                )
+	                            );
+	                        })
 	                    )
-	                )
-	            );
+	                );
+	            }
 	        }
 	    }]);
 
@@ -26013,7 +26150,7 @@
 	exports.default = List;
 
 /***/ },
-/* 231 */
+/* 232 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -26039,22 +26176,33 @@
 	var Search = function (_Component) {
 	    _inherits(Search, _Component);
 
-	    function Search() {
+	    function Search(props) {
 	        _classCallCheck(this, Search);
 
-	        return _possibleConstructorReturn(this, Object.getPrototypeOf(Search).apply(this, arguments));
+	        return _possibleConstructorReturn(this, Object.getPrototypeOf(Search).call(this, props));
 	    }
 
 	    _createClass(Search, [{
+	        key: 'search',
+	        value: function search() {
+	            var onSearch = this.props.onSearch;
+
+	            onSearch(this.refs.inputSearch.value);
+	        }
+	    }, {
 	        key: 'render',
 	        value: function render() {
+	            var _this2 = this;
+
 	            return _react2.default.createElement(
-	                'form',
+	                'div',
 	                null,
-	                _react2.default.createElement('input', { placeholder: '找一下' }),
+	                _react2.default.createElement('input', { placeholder: '找一下', ref: 'inputSearch' }),
 	                _react2.default.createElement(
 	                    'button',
-	                    null,
+	                    { onClick: function onClick(e) {
+	                            _this2.search(e);
+	                        } },
 	                    '搜索'
 	                )
 	            );
@@ -26067,7 +26215,7 @@
 	exports.default = Search;
 
 /***/ },
-/* 232 */
+/* 233 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
