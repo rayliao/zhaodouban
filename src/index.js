@@ -13,6 +13,7 @@ class App extends Component {
         this.state = {
             list: []
         }
+        // 每个方法都要绑定吗？
         this.fetchList = this.fetchList.bind(this);
     }
      // 获取api数据
